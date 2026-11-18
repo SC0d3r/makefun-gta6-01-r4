@@ -1,53 +1,98 @@
-// Keyboard and pointer input. Held keys give a steering direction; one-shot presses (start or
-// restart, pause) are queued as bit flags and taken once by the loop, so a press between two
-// frames is never lost and never counted twice.
+// Keyboard, mouse and pointer-lock input. Held keys answer isPressed(); edge presses answer
+// wasPressed() exactly once so interactions, weapon swaps and menu toggles never double-fire.
 
-export const ACTION_CONFIRM = 1;
-export const ACTION_PAUSE = 2;
+export class Input {
+  constructor(dom) {
+    this.dom = dom;
+    this.down = new Set();
+    this.pressed = new Set();
+    this.released = new Set();
+    this.mouse = { x: 0, y: 0, dx: 0, dy: 0, left: false, right: false };
+    this.leftPressed = false;
+    this.rightPressed = false;
+    this.locked = false;
+    this.enabled = true;
+    this._onKeys = [];
+    this.bind();
+  }
 
-const LEFT = new Set(['ArrowLeft', 'KeyA']);
-const RIGHT = new Set(['ArrowRight', 'KeyD']);
-const CONFIRM = new Set(['Space', 'Enter']);
-const PAUSE = new Set(['KeyP', 'Escape']);
+  bind() {
+    addEventListener('keydown', (e) => {
+      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (!this.down.has(e.code)) this.pressed.add(e.code);
+      this.down.add(e.code);
+      if (this.down.has('ShiftLeft') || this.down.has('ShiftRight')) this.pressed.add('Shift');
+    });
+    addEventListener('keyup', (e) => {
+      this.down.delete(e.code);
+      this.released.add(e.code);
+    });
+    addEventListener('blur', () => this.down.clear());
+    this.dom.addEventListener('mousedown', (e) => {
+      if (e.button === 0) { this.mouse.left = true; this.leftPressed = true; }
+      if (e.button === 2) { this.mouse.right = true; this.rightPressed = true; }
+      this.requestLock();
+    });
+    addEventListener('mouseup', (e) => {
+      if (e.button === 0) this.mouse.left = false;
+      if (e.button === 2) this.mouse.right = false;
+    });
+    addEventListener('mousemove', (e) => {
+      if (this.locked) {
+        this.mouse.dx += e.movementX || 0;
+        this.mouse.dy += e.movementY || 0;
+      }
+      this.mouse.x = e.clientX;
+      this.mouse.y = e.clientY;
+    });
+    document.addEventListener('pointerlockchange', () => {
+      this.locked = document.pointerLockElement === this.dom;
+    });
+    this.dom.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
 
-export function createInput(target) {
-  let left = false;
-  let right = false;
-  let actions = 0;
+  requestLock() {
+    if (!this.locked && this.dom.requestPointerLock) {
+      const p = this.dom.requestPointerLock();
+      if (p && p.catch) p.catch(() => {});
+    }
+  }
 
-  window.addEventListener('keydown', (event) => {
-    if (LEFT.has(event.code)) left = true;
-    else if (RIGHT.has(event.code)) right = true;
-    else if (CONFIRM.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_CONFIRM;
-    } else if (PAUSE.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_PAUSE;
-    } else return;
-    event.preventDefault();
-  });
-  window.addEventListener('keyup', (event) => {
-    if (LEFT.has(event.code)) left = false;
-    else if (RIGHT.has(event.code)) right = false;
-  });
-  // A key released while the tab is hidden never sends keyup: let go of everything on blur.
-  window.addEventListener('blur', () => {
-    left = false;
-    right = false;
-  });
-  target.addEventListener('pointerdown', () => {
-    actions |= ACTION_CONFIRM;
-  });
+  releaseLock() {
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
 
+  isPressed(...codes) {
+    return codes.some((c) => this.down.has(c));
+  }
+
+  wasPressed(...codes) {
+    return codes.some((c) => this.pressed.has(c));
+  }
+
+  axis(neg, pos) {
+    return (this.isPressed(pos) ? 1 : 0) - (this.isPressed(neg) ? 1 : 0);
+  }
+
+  takeMouse() {
+    const out = { dx: this.mouse.dx, dy: this.mouse.dy, left: this.leftPressed, right: this.rightPressed };
+    this.mouse.dx = 0;
+    this.mouse.dy = 0;
+    this.leftPressed = false;
+    this.rightPressed = false;
+    return out;
+  }
+
+  endFrame() {
+    this.pressed.clear();
+    this.released.clear();
+  }
+}
+
+export function pointerLock(dom) {
   return {
-    /** -1 for left, 1 for right, 0 for neither or both. */
-    direction() {
-      return (right ? 1 : 0) - (left ? 1 : 0);
-    },
-    /** The one-shot presses since the last call, as ACTION_* flags. */
-    takeActions() {
-      const taken = actions;
-      actions = 0;
-      return taken;
-    },
+    request: () => dom.requestPointerLock && dom.requestPointerLock(),
+    release: () => document.pointerLockElement && document.exitPointerLock(),
+    get active() { return document.pointerLockElement === dom; },
   };
 }
