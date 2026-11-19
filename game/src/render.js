@@ -1,3 +1,4 @@
+// Render pass: sky, fog and camera rig frozen for the r7 entry.
 // Exposure pass: golden-hour exposure and fog frozen from the frame fix.
 // Renderer, sky, sun, fog, shadows, tone mapping and the third-person camera rig with wall
 // avoidance. One directional golden-hour sun from the south-west, teal hemisphere fill and a

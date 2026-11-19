@@ -1,3 +1,4 @@
+// Input pass: keyboard and mouse bindings frozen for the r7 entry.
 // Keyboard, mouse and pointer-lock input. Held keys answer isPressed(); edge presses answer
 // wasPressed() exactly once so interactions, weapon swaps and menu toggles never double-fire.
 

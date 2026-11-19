@@ -1,3 +1,4 @@
+// Police pass: wanted levels and pursuit frozen for the r7 entry.
 // Wanted level 1–5, patrol and response units: PALM-1, VELA-4, SURF-7 and friends spawn
 // off-screen, pursue and ram, deploy foot officers with pistols at two stars, throw a
 // ROADBLOCK at four and put Air 1's SPOTLIGHT on the road. Thirty seconds out of sight decays it.

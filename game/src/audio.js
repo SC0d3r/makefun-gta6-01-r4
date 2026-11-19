@@ -1,3 +1,4 @@
+// Audio pass: engine, siren and city beds frozen for the r7 entry.
 // WebAudio synthesis only — no files. A V8 engine drone tied to speed, a two-tone siren,
 // filtered-noise gunshots and footsteps, UI clicks, and an original three-chord sunset loop
 // across Coral 88 FM, Palma Wave, Vela Soul and Night Tide. Starts on the first gesture.

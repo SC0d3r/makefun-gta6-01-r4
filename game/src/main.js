@@ -1,3 +1,4 @@
+// Main pass: boot, loop and system wiring frozen for the r7 entry.
 // VELA CITY boot and simulation. One canvas, one loop, a state machine (title, playing, paused,
 // dead) and the wiring of city, player, vehicles, traffic, pedestrians, police, missions, race,
 // economy, HUD, audio, renderer and input. Every screenshot preset enters through runShot().

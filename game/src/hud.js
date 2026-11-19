@@ -1,3 +1,4 @@
+// HUD pass: panel layout frozen for the r7 entry.
 // HUD pass: panel layout frozen for the entry frames; no gameplay logic changed.
 // The HUD: canvas panels for health, armour, wanted stars, minimap, police response, mission
 // card, weapon, cash, radio, speedometer, dialogue and race line — sized to stay readable at

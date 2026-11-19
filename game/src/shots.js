@@ -1,3 +1,4 @@
+// Shot pass: preset staging frozen for the r7 entry.
 // Capture pass: presets and staging frozen; viewport 1280x807 with the top 720 rows kept.
 // VELA CITY screenshot presets. Each one stages the live game once, then the constructor takes a
 // single render: chase (golden-hour pursuit on Palm Boulevard), street (downtown sidewalk at

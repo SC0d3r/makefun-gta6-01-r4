@@ -1,3 +1,4 @@
+// Config pass: tuning and presets frozen for the r7 entry.
 // VELA CITY — every tuning number, colour, story job and radio station in one place.
 // The city is a fictional Mediterranean-American coast at late golden hour: coral low-rises,
 // teal glass downtown, a beach boulevard, a marina and palm hills. Units are metres.

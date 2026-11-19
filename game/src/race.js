@@ -1,3 +1,4 @@
+// Race pass: checkpoint race state frozen for the r7 entry.
 // A real dusk street race: Coral Loop, two laps, three named rivals — Dario Sarno, Nia Vale and
 // Teo Marchetti — fixed checkpoints, live position, rubber-band rival pace, a race HUD line and a
 // minimap route. Start at the marked line with R, or from ?shot=race; free roam is restored after.
