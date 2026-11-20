@@ -4,6 +4,7 @@
 // single render: chase (golden-hour pursuit on Palm Boulevard), street (downtown sidewalk at
 // golden hour), drive (coastal marina run) and mission (the last drop on the marina dock). Every
 // random choice comes from the URL seed, so a preset repeats exactly.
+// r13 city-systems pass: screenshot presets are unchanged.
 
 import { createVehicle } from './vehicle.js';
 import { beginMission } from './missions.js';

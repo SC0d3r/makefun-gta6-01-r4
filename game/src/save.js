@@ -2,6 +2,7 @@
 // The store owns its own key and version, so the title screen keeps reading the original
 // Economy record under SAVE_KEY. Every storage, JSON and game access is guarded: a missing
 // localStorage, a corrupt record or a half-built game returns a value instead of throwing.
+// r13 city-systems pass: the store is unchanged and used for autosave.
 
 const DEFAULT_KEY = 'vela-city.store.v1';
 const CASH_MAX = 1000000000000;

@@ -1,7 +1,8 @@
 [
   {
     "name": "1-chase.jpg",
-    "query": "?shot=chase&seed=7"
+    "query": "?shot=chase&seed=7",
+    "note": "r13 city-systems pass"
   },
   {
     "name": "2-street.jpg",

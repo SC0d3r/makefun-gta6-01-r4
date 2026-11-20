@@ -3,6 +3,7 @@
 // Renderer, sky, sun, fog, shadows, tone mapping and the third-person camera rig with wall
 // avoidance. One directional golden-hour sun from the south-west, teal hemisphere fill and a
 // gradient sky dome whose horizon matches the exponential fog. A dusk preset serves the race.
+// r13 city-systems pass: rendering is unchanged.
 
 import { PALETTE, CAMERA } from './config.js';
 import { clamp, damp, angleLerp } from './rng.js';

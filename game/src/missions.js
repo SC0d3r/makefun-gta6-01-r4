@@ -3,6 +3,7 @@
 // The story: Courier Run, Hot Pursuit and Marina Heist as a real mission state machine with
 // world markers, staged objectives, timers, dialogue with named speakers, fail and retry,
 // cash rewards and unlocks. Marisol, Nico and Rico carry the chapter cards.
+// r13 city-systems pass: mission state is unchanged and reports to heat.
 
 import { MISSION_DEFS } from './config.js';
 import { seededRandom, dist2, clamp } from './rng.js';

@@ -1,6 +1,7 @@
 // Map pass: district zones, street names, waypoints and canvas drawing helpers.
 // Everything here is presentation data plus pure draw functions, so the HUD, the pause map
 // and the minimap can share one projection without changing the city generator.
+// r13 city-systems pass: map helpers are unchanged and wired by the HUD.
 
 import { clamp, seededRandom } from './rng.js';
 

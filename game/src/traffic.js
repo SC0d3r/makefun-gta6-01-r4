@@ -1,6 +1,7 @@
 // Traffic pass: lanes, lights and traffic cars frozen for the r7 entry.
 // Street life: 24 lane-following traffic cars that stop for signals and each other, plus 40
 // pedestrians on the sidewalks who sidestep one another, cower and flee from gunfire.
+// r13 city-systems pass: traffic and pedestrians are unchanged.
 
 import { TRAFFIC, CITY_LAYOUT } from './config.js';
 import { seededRandom, clamp, dist2, damp } from './rng.js';

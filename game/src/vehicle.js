@@ -2,6 +2,7 @@
 // Stealable vehicles: the Vela GT coupe, Palma 4 sedan, Surf Hauler van, VPB police cruiser and
 // Kestrel motorbike. Arcade drive physics with grip, handbrake slides, tyre smoke, skid marks,
 // condition damage, visible red/blue police bars and a speed-pulling chase camera.
+// r13 city-systems pass: vehicle physics are unchanged.
 
 import { VEHICLE_SPECS, CAMERA } from './config.js';
 import { clamp, damp, dist2 } from './rng.js';

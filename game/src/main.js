@@ -11,6 +11,12 @@ import { WantedSystem, PoliceDispatch, setWantedLevel, updateWanted } from './po
 import { MissionRunner, beginMission, updateMission } from './missions.js';
 import { RaceSystem, startRace, updateRace } from './race.js';
 import { Economy, saveGame } from './progression.js';
+import { MapSystem } from './map.js';
+import { HeatSystem } from './heat.js';
+import { SaveStore } from './save.js';
+import { StuntSystem } from './stunt.js';
+import { Phone } from './phone.js';
+import { RadioDial } from './radio.js';
 import { HUD } from './hud.js';
 import { AudioEngine } from './audio.js';
 import { createRenderer, createSky, setupShadows, CameraRig, updateCamera, setTimeOfDay } from './render.js';
@@ -38,6 +44,9 @@ export class Game {
     this.radioIndex = 0;
     this.radio = RADIO_STATIONS[0];
     this.district = 'PALM BEACH';
+    this.stuntCallout = null;
+    this.storeSummary = '';
+    this._breachSeen = new WeakSet();
     this.fps = 60;
     this.frames = 0;
     this.fpsTime = 0;
@@ -66,13 +75,20 @@ export class Game {
     this.police = new PoliceDispatch(this.scene, this.world, this.seed);
     this.vehicles = [];
     this.spawnParkedVehicles();
+    this.map = new MapSystem(this.city, DISTRICTS, this.seed);
+    this.heat = new HeatSystem(DISTRICTS, this.seed);
+    this.save = new SaveStore();
+    this.stunts = new StuntSystem(this.seed);
+    this.phone = new Phone([], this.seed);
+    this.radioDial = new RadioDial(RADIO_STATIONS, this.seed);
     this.hud = new HUD(document.getElementById('hud'));
     this.audio = new AudioEngine();
+    if (!this.shotName) this.restoreStore();
     this.missions = new MissionRunner(this.scene, this.economy, {
       setWanted: (n, player) => this.applyWanted(n, player),
       alarm: (player, n) => this.applyWanted(Math.max(n, this.police.wanted.stars), player),
       onBegin: (def) => { this.hud.notify(`${def.title} · ${def.chapter}`, 4); this.clearBeacon(); },
-      onComplete: (def, reward) => { this.hud.notify(`${def.title} complete · +$${reward.toLocaleString('en-US')}`, 6); this.economy.stats.missions = this.economy.completed.length; },
+      onComplete: (def, reward) => { this.hud.notify(`${def.title} complete · +$${reward.toLocaleString('en-US')}`, 6); this.economy.stats.missions = this.economy.completed.length; this.heat.addCrime(this.district, 'mission-complete'); },
       onFail: (def, reason) => this.hud.notify(`${def.title} failed · R to retry`, 6),
       bounds: CITY_LAYOUT.bounds,
     });
@@ -82,7 +98,7 @@ export class Game {
       addCash: (amount, source) => { this.economy.addCash(amount, source); this.economy.stats.races = (this.economy.stats.races || 0) + 1; this.economy.saveGame(); },
       onSpawnCar: (car) => this.vehicles.push(car),
       onStart: () => { this.hud.notify('CORAL LOOP · 2 LAPS · 3 RIVALS · R TO ABORT', 5); this.police.reset?.(); },
-      onFinish: (race, ok, reward) => { this.hud.notify(ok ? `${race.resultText}` : 'Race ended', 6); },
+      onFinish: (race, ok, reward) => { this.hud.notify(ok ? `${race.resultText}` : 'Race ended', 6); if (ok) this.heat.addCrime(this.district, 'race-finish'); },
     });
     this.input = new Input(this.canvas);
     this.bindUi();
@@ -145,6 +161,59 @@ export class Game {
 
   bindInteractions() {}
 
+  restoreStore() {
+    const summary = this.save.restore(this);
+    if (!summary) return;
+    this.economy.loaded = true;
+    const count = RADIO_STATIONS.length || 1;
+    const raw = Math.trunc(Number(this.radioIndex) || 0);
+    this.radioIndex = ((raw % count) + count) % count;
+    this.radio = RADIO_STATIONS[this.radioIndex] || RADIO_STATIONS[0];
+    this.radioDial.setStation(this.radioIndex);
+    if (this.audio.radio && typeof this.audio.radio.tune === 'function') this.audio.radio.tune(this.radioIndex);
+    if (this.district) this.map.discover(this.district);
+    this.storeSummary = summary;
+  }
+
+  togglePhone() {
+    const open = this.phone.toggle();
+    this.audio.click();
+    this.hud.notify(open ? 'Phone open · P to close' : 'Phone closed', 2);
+    return open;
+  }
+
+  handlePhoneKeys() {
+    const phone = this.phone;
+    if (this.input.wasPressed('Tab')) { phone.nextTab(1); this.audio.click(); }
+    if (this.input.wasPressed('Digit1')) phone.select(0);
+    if (this.input.wasPressed('Digit2')) phone.select(1);
+    if (this.input.wasPressed('Digit3')) phone.select(2);
+    if (this.input.wasPressed('Digit4')) phone.select(3);
+    const rows = phone.lines().length;
+    if (this.input.wasPressed('ArrowUp')) phone.selected = Math.max(0, phone.selected - 1);
+    if (this.input.wasPressed('ArrowDown')) phone.selected = Math.min(Math.max(0, rows - 1), phone.selected + 1);
+    if (this.input.wasPressed('Enter')) {
+      if (phone.tab === 0) { phone.markRead(phone.selected); this.audio.click(); }
+      else if (phone.tab === 2) {
+        const job = phone.acceptJob(phone.selected);
+        if (job) { this.hud.notify(`${job.name} · $${job.reward.toLocaleString('en-US')}`, 3); this.audio.click(); }
+      }
+    }
+    if (this.input.wasPressed('KeyG')) {
+      const job = phone.completeJob({ economy: this.economy });
+      if (job) { this.hud.notify(`${job.name} complete · +$${job.reward.toLocaleString('en-US')}`, 4); this.audio.click(); }
+    }
+  }
+
+  trackBreaches() {
+    for (const block of this.police.blockades) {
+      if (block.breached && !this._breachSeen.has(block)) {
+        this._breachSeen.add(block);
+        this.heat.addCrime(this.district, 'roadblock-breach');
+      }
+    }
+  }
+
   startPlaying(fresh) {
     if (fresh) this.resetRun();
     this.hud.showTitle(this.economy, false);
@@ -176,6 +245,12 @@ export class Game {
     this.player.armour = 65;
     this.player.weapon = 'smg';
     this.player.ammo = { pistol: 48, smg: 150 };
+    this.heat = new HeatSystem(DISTRICTS, this.seed);
+    this.stunts = new StuntSystem(this.seed);
+    this.phone = new Phone([], this.seed);
+    this.map = new MapSystem(this.city, DISTRICTS, this.seed);
+    this.stuntCallout = null;
+    this._breachSeen = new WeakSet();
     this.refreshBeacon();
   }
 
@@ -291,8 +366,10 @@ export class Game {
     if (this.input.wasPressed('KeyF') && car) this.leaveVehicle();
     if (this.input.wasPressed('KeyE')) this.interact();
     if (this.input.wasPressed('KeyR')) this.raceKey();
-    if (this.input.wasPressed('KeyQ')) { this.radioIndex = (this.radioIndex + 1) % RADIO_STATIONS.length; this.radio = RADIO_STATIONS[this.radioIndex]; this.audio.radio.tune(this.radioIndex); this.hud.notify(`${this.radio.name} · ${this.radio.track}`, 2.5); }
+    if (this.input.wasPressed('KeyQ')) { this.radioIndex = (this.radioIndex + 1) % RADIO_STATIONS.length; this.radio = RADIO_STATIONS[this.radioIndex]; this.audio.radio.tune(this.radioIndex); this.radioDial.setStation(this.radioIndex); this.hud.notify(`${this.radio.name} · ${this.radio.track}`, 2.5); }
     if (this.input.wasPressed('KeyH')) { this.audio.toggleMute(); this.hud.notify(this.audio.muted ? 'Audio muted' : 'Audio on', 2); }
+    if (this.input.wasPressed('KeyP')) this.togglePhone();
+    if (this.phone.open) this.handlePhoneKeys();
 
     updateCity(this.city, this.time, dt);
     updateTraffic(this.traffic, dt, car);
@@ -309,10 +386,18 @@ export class Game {
     this.manageClock(dt);
     this.audio.update(dt, this);
     this.district = this.districtAt(this.player.inVehicle ? this.player.inVehicle.pos : this.player.pos);
+    this.map.update(dt, { player: this.player });
+    this.map.discover(this.district);
+    this.heat.update(dt, { player: this.player, police: this.police, district: this.district, game: this });
+    const stuntCallout = this.stunts.update(dt, { vehicle: this.player.inVehicle, player: this.player, traffic: this.traffic, police: this.police, game: this, groundY: 0.35 });
+    if (stuntCallout) this.stuntCallout = { text: stuntCallout, at: this.time };
+    this.phone.update(dt, { notify: (text, seconds) => this.hud.notify(text, seconds) });
+    this.radioDial.update(dt, { player: this.player, district: this.district, wanted: this.police.wanted, game: this });
     this.followSun();
     if (this.player.dead) this.die();
     if (this.player.inVehicle && this.player.inVehicle.health <= 0) {
       this.hud.notify('Vehicle wrecked · find another', 4);
+      this.heat.addCrime(this.district, 'wreck');
       this.leaveVehicle();
     }
   }
@@ -400,6 +485,7 @@ export class Game {
     if (this.police.wanted.stars < 5 && this.time - this.lastShotCrime > 1.4) {
       this.lastShotCrime = this.time;
       this.applyWanted(Math.max(1, this.police.wanted.stars + 1), this.player);
+      this.heat.addCrime(this.district, 'weapon-fire');
     }
   }
 
@@ -414,6 +500,7 @@ export class Game {
   }
 
   managePolice(dt) {
+    this.trackBreaches();
     const wanted = this.police.wanted;
     if (wanted.stars > this.lastStars) {
       this.applyWanted(wanted.stars, this.player);
@@ -460,6 +547,7 @@ export class Game {
         if (this.hitRunTimer <= 0) {
           this.hitRunTimer = 2.5;
           this.applyWanted(Math.min(5, Math.max(2, this.police.wanted.stars + 2)), this.player);
+          this.heat.addCrime(this.district, 'pedestrian-hit');
         }
         p.state = 'flee';
         p.fear = 8;
@@ -474,6 +562,7 @@ export class Game {
       if (dist2(car.pos.x, car.pos.z, u.vehicle.pos.x, u.vehicle.pos.z) < 4.2) {
         this.lastRam = this.time;
         if (this.police.wanted.stars < 4) this.applyWanted(Math.min(5, this.police.wanted.stars + 1), this.player);
+        this.heat.addCrime(this.district, 'cruiser-ram');
         this.rig.shake = 0.28;
         return;
       }
@@ -509,6 +598,9 @@ export class Game {
     if (this.saveAccum > 20) {
       this.saveAccum = 0;
       this.economy.saveGame({ district: this.district });
+    }
+    if (this.save.shouldAutosave(dt, 20)) {
+      this.save.write(this.save.snapshot(this), 'autosave');
     }
   }
 

@@ -1,6 +1,7 @@
 // RNG pass: deterministic seeded randomness frozen for the r7 entry.
 // Deterministic randomness: ?seed=N fixes every city, traffic, pedestrian, rival and mission
 // choice so a screenshot preset is identical on every machine.
+// r13 city-systems pass: seeded randomness is unchanged.
 
 export function mulberry32(seed) {
   let a = seed >>> 0;

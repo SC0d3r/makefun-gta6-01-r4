@@ -2,6 +2,7 @@
 // VELA CITY generator: a golden-hour coastal grid of coral low-rises, teal glass towers, a palm
 // boulevard, sand beach, marina docks and boats, hillside villas and painted canvas signs.
 // Everything is built from instanced boxes and canvas textures — no external assets.
+// r13 city-systems pass: the city generator is unchanged.
 
 import { PALETTE, CITY_LAYOUT } from './config.js';
 import { seededRandom, clamp } from './rng.js';

@@ -1,11 +1,15 @@
 // HUD pass: panel layout frozen for the r7 entry.
 // HUD pass: panel layout frozen for the entry frames; no gameplay logic changed.
 // The HUD: canvas panels for health, armour, wanted stars, minimap, police response, mission
-// card, weapon, cash, radio, speedometer, dialogue and race line — sized to stay readable at
-// 768 px — plus DOM title, pause and death menus and the full city map.
+// card, weapon, cash, radio, speedometer, dialogue and race line, sized to stay readable at
+// 768 px, plus DOM title, pause and death menus and the full city map.
 
 import { PALETTE, DISTRICTS, RADIO_STATIONS, CITY_LAYOUT, MISSION_DEFS } from './config.js';
 import { clamp, dist2 } from './rng.js';
+import { heatBand, heatColor } from './heat.js';
+import { drawWaypoint } from './map.js';
+
+const PHONE_TABS = ['MESSAGES', 'CONTACTS', 'JOBS', 'SETTINGS'];
 
 export class HUD {
   constructor(root) {
@@ -17,6 +21,8 @@ export class HUD {
     this.dpr = 1;
     this.notice = null;
     this.noticeTime = 0;
+    this.saveToast = null;
+    this.lastSaveWrite = 0;
     this.visible = true;
     this.menuHandlers = {};
     this.buildMenus();
@@ -109,6 +115,10 @@ export class HUD {
       this.noticeTime -= dt;
       if (this.noticeTime <= 0) this.notice = null;
     }
+    if (this.saveToast) {
+      this.saveToast.time -= dt;
+      if (this.saveToast.time <= 0) this.saveToast = null;
+    }
   }
 
   drawHud(game) {
@@ -118,7 +128,16 @@ export class HUD {
     if (game.state === 'title') { this.drawTitle(ctx, game); return; }
     if (game.state === 'paused') { this.drawCityMap(ctx, game); return; }
     const w = this.w, h = this.h;
+    const stacked = w < 1000 && !!game.missions?.card();
+    const heatY = stacked ? 234 : 134;
+    const stuntY = stacked ? 298 : 198;
+    const radioY = stacked ? 362 : 262;
+    this.watchSave(game);
     this.drawHealthArmour(ctx, game);
+    this.drawDistrictHeader(ctx, game, w);
+    this.drawHeatMeter(ctx, game, 24, heatY);
+    this.drawStunts(ctx, game, 24, stuntY);
+    this.drawRadio(ctx, game, 24, radioY);
     this.drawWantedStars(ctx, game, w - 120, 58);
     this.drawMinimap(ctx, game, w - 120, 178, 80);
     this.drawResponseList(ctx, game, w - 24, 302);
@@ -140,6 +159,8 @@ export class HUD {
       ctx.fillText(this.notice, w / 2, 219);
       ctx.restore();
     }
+    this.drawSaveToast(ctx, 24, radioY + (game.police?.wanted?.stars ? 82 : 56));
+    if (game.phone?.open) this.drawPhone(ctx, game, w, h);
     this.vignette(ctx);
   }
 
@@ -306,6 +327,7 @@ export class HUD {
       ctx.fillStyle = PALETTE.gold;
       this.diamond(ctx, sx(marker.x), sz(marker.z), 5.5);
     }
+    if (game.map?.waypoint) drawWaypoint(ctx, { X: sx, Z: sz, scale }, game.map.waypoint, game.map.waypointLabel, game.time);
     // Police blips.
     if (game.police) {
       for (const u of game.police.units) {
@@ -593,6 +615,191 @@ export class HUD {
     ctx.font = '600 17px system-ui, sans-serif';
     const inCar = !!game.player.inVehicle;
     ctx.fillText(inCar ? 'WASD DRIVE · SPACE HANDBRAKE · F EXIT · LMB FIRE · R RACE · ESC MAP' : 'WASD MOVE · SHIFT SPRINT · F STEAL · E JOB · LMB FIRE · R RACE · ESC MAP', x, bottom - 4);
+    ctx.restore();
+  }
+
+  watchSave(game) {
+    const save = game.save;
+    if (!save || !save.lastWrite) return;
+    if (save.lastWrite === this.lastSaveWrite) return;
+    this.lastSaveWrite = save.lastWrite;
+    this.saveToast = { text: `SAVED · ${String(save.lastReason || 'auto').toUpperCase()}`, time: 3 };
+  }
+
+  drawDistrictHeader(ctx, game, w) {
+    const name = String(game.district || 'VELA CITY').toUpperCase();
+    let descriptor = '';
+    if (game.heat && typeof game.heat.labelFor === 'function') {
+      const rows = String(game.heat.labelFor(name)).split('\n');
+      descriptor = rows[1] || '';
+    }
+    const tail = descriptor ? ` · ${descriptor}` : '';
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 13px "Arial Black", system-ui, sans-serif';
+    const nameW = ctx.measureText(name).width;
+    ctx.font = '600 13px system-ui, sans-serif';
+    const tailW = ctx.measureText(tail).width;
+    const left = w / 2 - (nameW + tailW) / 2;
+    ctx.fillStyle = 'rgba(8,20,26,0.8)';
+    ctx.fillRect(left - 12, 0, nameW + tailW + 24, 18);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PALETTE.gold;
+    ctx.font = '900 13px "Arial Black", system-ui, sans-serif';
+    ctx.fillText(name, left, 10);
+    ctx.fillStyle = 'rgba(244,234,214,0.82)';
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillText(tail, left + nameW, 10);
+    ctx.restore();
+  }
+
+  drawHeatMeter(ctx, game, x, y) {
+    const heat = game.heat;
+    if (!heat) return;
+    const value = heat.heatOf(game.district);
+    const tier = heat.tierOf(game.district);
+    const band = heatBand(value);
+    const color = heatColor(value);
+    const width = 248;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,18,24,0.68)';
+    this.panel(ctx, x - 8, y - 12, width, 58, color);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PALETTE.cream;
+    ctx.font = '900 16px "Arial Black", system-ui, sans-serif';
+    ctx.fillText('DISTRICT HEAT', x, y + 6);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = color;
+    ctx.font = '900 15px "Arial Black", system-ui, sans-serif';
+    ctx.fillText(`${Math.round(value)} · ${String(band).toUpperCase()}`, x + width - 24, y + 6);
+    this.bar(ctx, x, y + 14, width - 32, 8, value / 100, color);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = tier.color || 'rgba(244,234,214,0.72)';
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillText(`${tier.name} · REP ${Math.round(heat.reputationOf(game.district))}`, x, y + 38);
+    ctx.restore();
+  }
+
+  drawStunts(ctx, game, x, y) {
+    const stunts = game.stunts;
+    if (!stunts) return;
+    const width = 248;
+    const combo = typeof stunts.comboMultiplier === 'function' ? stunts.comboMultiplier() : 1;
+    const score = Number(stunts.score) || 0;
+    const rank = stunts.rank && stunts.rank.name ? stunts.rank.name : 'ROOKIE';
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,18,24,0.68)';
+    this.panel(ctx, x - 8, y - 12, width, 64, PALETTE.neonCyan);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PALETTE.cream;
+    ctx.font = '900 16px "Arial Black", system-ui, sans-serif';
+    ctx.fillText('STUNTS', x, y + 6);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = PALETTE.gold;
+    ctx.font = '900 18px "Arial Black", system-ui, sans-serif';
+    ctx.fillText(score.toLocaleString('en-US'), x + width - 24, y + 6);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(244,234,214,0.75)';
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillText(`${rank} · COMBO x${combo} · BEST x${stunts.bestCombo || 0}`, x, y + 28);
+    const fresh = game.stuntCallout && game.time - game.stuntCallout.at < 3.5;
+    ctx.fillStyle = fresh ? PALETTE.neonCyan : 'rgba(244,234,214,0.45)';
+    ctx.font = '700 13px system-ui, sans-serif';
+    const last = stunts.lastMove && stunts.lastMove !== 'ready' ? String(stunts.lastMove).toUpperCase() : 'NO MOVES YET';
+    ctx.fillText(fresh ? game.stuntCallout.text : `LAST · ${last}`, x, y + 46);
+    ctx.restore();
+  }
+
+  drawRadio(ctx, game, x, y) {
+    const dial = game.radioDial;
+    if (!dial) return;
+    const width = 248;
+    const stars = game.police?.wanted?.stars || 0;
+    const height = stars > 0 ? 70 : 44;
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,18,24,0.68)';
+    this.panel(ctx, x - 8, y - 12, width, height, PALETTE.gold);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PALETTE.gold;
+    ctx.font = '900 13px "Arial Black", system-ui, sans-serif';
+    ctx.fillText('RADIO', x, y + 4);
+    const bars = dial.signalBars ? dial.signalBars() : 0;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = i < bars ? PALETTE.neonCyan : 'rgba(244,234,214,0.22)';
+      ctx.fillRect(x + width - 50 + i * 8, y - 2 - i * 3, 5, 6 + i * 3);
+    }
+    ctx.fillStyle = PALETTE.cream;
+    ctx.font = '600 13px system-ui, sans-serif';
+    ctx.fillText(dial.stationLine(), x, y + 22);
+    if (stars > 0) {
+      ctx.fillStyle = 'rgba(244,234,214,0.7)';
+      ctx.font = '600 12px system-ui, sans-serif';
+      this.wrapText(ctx, dial.dispatchLine({ district: game.district, wanted: game.police?.wanted }), x, y + 40, width - 32, 14, 2);
+    }
+    ctx.restore();
+  }
+
+  drawPhone(ctx, game, w, h) {
+    const phone = game.phone;
+    if (!phone || !phone.open) return;
+    const lines = phone.lines();
+    const width = 360;
+    const height = 108 + Math.max(1, lines.length) * 24;
+    const x = 40;
+    const y = Math.max(120, Math.min(h - height - 40, 150));
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,14,20,0.94)';
+    this.panel(ctx, x, y, width, height, PALETTE.neonCyan);
+    const header = String(phone.header()).split('\n');
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PALETTE.neonCyan;
+    ctx.font = '900 16px "Arial Black", system-ui, sans-serif';
+    ctx.fillText(header[0] || 'VELA WIRELESS', x + 16, y + 24);
+    ctx.fillStyle = 'rgba(244,234,214,0.7)';
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillText(header[1] || '', x + 16, y + 42);
+    let tx = x + 16;
+    ctx.font = '900 12px "Arial Black", system-ui, sans-serif';
+    for (let i = 0; i < PHONE_TABS.length; i++) {
+      const label = PHONE_TABS[i];
+      const tw = ctx.measureText(label).width;
+      ctx.fillStyle = i === phone.tab ? PALETTE.gold : 'rgba(244,234,214,0.45)';
+      ctx.fillText(label, tx, y + 66);
+      tx += tw + 14;
+    }
+    let ly = y + 92;
+    for (let i = 0; i < lines.length; i++) {
+      const row = lines[i];
+      const selected = i === phone.selected;
+      if (selected) { ctx.fillStyle = 'rgba(57,230,224,0.16)'; ctx.fillRect(x + 10, ly - 14, width - 20, 22); }
+      ctx.textAlign = 'left';
+      ctx.fillStyle = selected ? PALETTE.cream : 'rgba(244,234,214,0.8)';
+      ctx.font = '600 14px system-ui, sans-serif';
+      ctx.fillText(String(row.left), x + 16, ly);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = selected ? PALETTE.gold : 'rgba(244,234,214,0.55)';
+      ctx.font = '600 13px system-ui, sans-serif';
+      ctx.fillText(String(row.right), x + width - 16, ly);
+      ly += 24;
+    }
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(244,234,214,0.5)';
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.fillText('P CLOSE · TAB NEXT · ENTER ACCEPT · G COMPLETE', x + 16, y + height - 12);
+    ctx.restore();
+  }
+
+  drawSaveToast(ctx, x, y) {
+    if (!this.saveToast) return;
+    const text = this.saveToast.text;
+    ctx.save();
+    ctx.textAlign = 'left';
+    ctx.font = '700 13px system-ui, sans-serif';
+    const tw = ctx.measureText(text).width;
+    ctx.fillStyle = 'rgba(10,18,24,0.8)';
+    this.panel(ctx, x - 8, y - 12, tw + 32, 30, PALETTE.gold);
+    ctx.fillStyle = PALETTE.gold;
+    ctx.fillText(text, x + 4, y + 8);
     ctx.restore();
   }
 

@@ -3,6 +3,7 @@
 // standing value from 0 to 1000. Police stars push heat up while the player stays in
 // a district, and every event leaves a short label for the HUD and pause map to read.
 // The module is deterministic: all variation comes from the seeded rng passed in.
+// r13 city-systems pass: heat data is unchanged and wired by main.js.
 
 import { seededRandom, clamp } from './rng.js';
 

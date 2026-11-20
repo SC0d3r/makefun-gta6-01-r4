@@ -1,6 +1,7 @@
 // Radio pass: four coast stations, their dispatch desks and a signal model.
 // The dial sits beside the existing RADIO_STATIONS table and only adds presentation data,
 // so every station keeps the name, freq, track, color and mood fields the HUD already reads.
+// r13 city-systems pass: the dial is unchanged and driven by main.js.
 
 import { seededRandom, clamp } from './rng.js';
 

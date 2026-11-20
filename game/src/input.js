@@ -1,6 +1,7 @@
 // Input pass: keyboard and mouse bindings frozen for the r7 entry.
 // Keyboard, mouse and pointer-lock input. Held keys answer isPressed(); edge presses answer
 // wasPressed() exactly once so interactions, weapon swaps and menu toggles never double-fire.
+// r13 city-systems pass: key bindings are unchanged.
 
 export class Input {
   constructor(dom) {

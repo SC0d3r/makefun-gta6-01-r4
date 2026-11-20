@@ -1,6 +1,7 @@
 // Progression pass: unlocks and stats frozen for the r7 entry.
 // Cash, chapter, clock and unlocks, with a real localStorage save so the title screen can offer
 // Continue with a line like "Ch. 2 Paper Moon - $31,420 - Day 3, 18:40" beside New Game.
+// r13 city-systems pass: economy saves are unchanged.
 
 import { SAVE_KEY, MISSION_DEFS } from './config.js';
 

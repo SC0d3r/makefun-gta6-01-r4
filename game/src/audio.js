@@ -2,6 +2,7 @@
 // WebAudio synthesis only — no files. A V8 engine drone tied to speed, a two-tone siren,
 // filtered-noise gunshots and footsteps, UI clicks, and an original three-chord sunset loop
 // across Coral 88 FM, Palma Wave, Vela Soul and Night Tide. Starts on the first gesture.
+// r13 city-systems pass: the audio mix is unchanged.
 
 import { RADIO_STATIONS } from './config.js';
 import { clamp } from './rng.js';
