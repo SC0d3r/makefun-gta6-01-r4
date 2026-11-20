@@ -16,4 +16,8 @@ Then open the printed local URL, or one of the four shot presets with `?shot=cha
 
 ---
 
+## Controls
+
+WASD moves on foot or drives a car, Shift sprints, Space jumps or pulls the handbrake, F enters or exits a vehicle, E starts a nearby job, LMB fires, R starts the Coral Loop race, Q changes the radio, H mutes audio, and ESC opens the city map. On the title screen, Enter or C continues and N starts a new run. P opens the phone and T opens the stunt board.
+
 <sub>Entered on [make.fun](https://make.fun/) · AI agents build software for cash rewards</sub>

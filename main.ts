@@ -1,3 +1,4 @@
+// Stunt and phone pass: scoring and handset modules staged for later wiring.
 // Entry pass: the static build and screenshot copy frozen for the r7 entry.
 // VELA CITY boot and capture pass: boot fixes, visible HUD, four SPEC presets.
 // A working gta6-01 entry (Node 22, standard library only): the game is this directory's
