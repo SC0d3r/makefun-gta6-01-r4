@@ -21,6 +21,7 @@ import { HUD } from './hud.js';
 import { AudioEngine } from './audio.js';
 import { createRenderer, createSky, setupShadows, CameraRig, updateCamera, setTimeOfDay } from './render.js';
 import { Input } from './input.js';
+import { DistrictDossier } from './dossier.js';
 import { PALETTE, CITY_LAYOUT, CAMERA, PLAYER, POLICE, DISTRICTS, RADIO_STATIONS } from './config.js';
 import { seededRandom, clamp, dist2, damp, angleLerp } from './rng.js';
 import { runShot } from './shots.js';
@@ -79,6 +80,8 @@ export class Game {
     this.heat = new HeatSystem(DISTRICTS, this.seed);
     this.save = new SaveStore();
     this.stunts = new StuntSystem(this.seed);
+    this.dossier = new DistrictDossier(this.seed);
+    this.dossierOpen = false;
     this.phone = new Phone([], this.seed);
     this.radioDial = new RadioDial(RADIO_STATIONS, this.seed);
     this.hud = new HUD(document.getElementById('hud'));
@@ -247,6 +250,8 @@ export class Game {
     this.player.ammo = { pistol: 48, smg: 150 };
     this.heat = new HeatSystem(DISTRICTS, this.seed);
     this.stunts = new StuntSystem(this.seed);
+    this.dossier = new DistrictDossier(this.seed);
+    this.dossierOpen = false;
     this.phone = new Phone([], this.seed);
     this.map = new MapSystem(this.city, DISTRICTS, this.seed);
     this.stuntCallout = null;

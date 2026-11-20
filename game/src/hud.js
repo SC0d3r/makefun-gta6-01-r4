@@ -8,6 +8,7 @@ import { PALETTE, DISTRICTS, RADIO_STATIONS, CITY_LAYOUT, MISSION_DEFS } from '.
 import { clamp, dist2 } from './rng.js';
 import { heatBand, heatColor } from './heat.js';
 import { drawWaypoint } from './map.js';
+import { drawDistrictFile, districtTickerLine } from './dossier.js';
 
 const PHONE_TABS = ['MESSAGES', 'CONTACTS', 'JOBS', 'SETTINGS'];
 
@@ -126,7 +127,11 @@ export class HUD {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.w, this.h);
     if (game.state === 'title') { this.drawTitle(ctx, game); return; }
-    if (game.state === 'paused') { this.drawCityMap(ctx, game); return; }
+    if (game.state === 'paused') {
+      if (game.dossierOpen) drawDistrictFile(ctx, game, this.w, this.h);
+      else this.drawCityMap(ctx, game);
+      return;
+    }
     const w = this.w, h = this.h;
     const stacked = w < 1000 && !!game.missions?.card();
     const heatY = stacked ? 234 : 134;
@@ -138,6 +143,14 @@ export class HUD {
     this.drawHeatMeter(ctx, game, 24, heatY);
     this.drawStunts(ctx, game, 24, stuntY);
     this.drawRadio(ctx, game, 24, radioY);
+    const dossierTicker = districtTickerLine(game);
+    if (dossierTicker) {
+      ctx.save();
+      ctx.fillStyle = PALETTE.coral;
+      ctx.font = '700 13px system-ui, sans-serif';
+      ctx.fillText(dossierTicker.slice(0, 64), 24, radioY + 62);
+      ctx.restore();
+    }
     this.drawWantedStars(ctx, game, w - 120, 58);
     this.drawMinimap(ctx, game, w - 120, 178, 80);
     this.drawResponseList(ctx, game, w - 24, 302);
@@ -974,6 +987,9 @@ export class HUD {
     ctx.fillStyle = PALETTE.cream;
     ctx.font = '700 22px system-ui, sans-serif';
     ctx.fillText(`${eco.continueLine()}  ·  Missions ${eco.completed.length}/${MISSION_DEFS.length}  ·  ${game.district || 'PALM BEACH'}`, mapX, h - 26);
+    ctx.fillStyle = PALETTE.neonCyan;
+    ctx.font = '600 16px system-ui, sans-serif';
+    ctx.fillText('TAB DISTRICT FILE  ·  ESC RESUME', mapX, h - 52);
     ctx.restore();
   }
 
