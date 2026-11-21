@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/gta6-01/SC0d3r/makefun-gta6-01-r4/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard)
 [![reward](https://make.fun/badge/gta6-01/SC0d3r/makefun-gta6-01-r4/reward.svg)](https://make.fun/bounty/gta6-01)
 
-VELA CITY is an original three.js open-world crime game set in a procedural coastal city at golden hour: a downtown street crowd and a parked fleet line the boulevards, the police respond with cruisers, a helicopter and roadblocks as the wanted level rises, and story jobs carry you from Palm Row to the marina docks. The landmark skyline adds a Ferris wheel, lighthouse, cargo ship, offshore island, hillside sign and drive-in, behind arcade driving, on-foot combat, a minimap and a full HUD.
+VELA CITY is an original three.js open-world crime game set in a procedural coastal city at golden hour: a downtown street crowd and a parked fleet line the boulevards, the police respond with cruisers, a helicopter and roadblocks as the wanted level rises, burning wreck effects mark the aftermath of the chase, and story jobs carry you from Palm Row to the marina docks. The landmark skyline adds a Ferris wheel, lighthouse, cargo ship, offshore island, hillside sign and drive-in, behind arcade driving, on-foot combat, a minimap and a full HUD.
 
 Every game module in this frozen entry carries a single authored note describing its role.
 
