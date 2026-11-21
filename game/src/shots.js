@@ -1,3 +1,4 @@
+// Shots module: stages the four capture presets and renders each one once from the URL seed.
 // Shot pass: preset staging frozen for the r7 entry.
 // Capture pass: presets and staging frozen; viewport 1280x807 with the top 720 rows kept.
 // VELA CITY screenshot presets. Each one stages the live game once, then the constructor takes a
@@ -69,8 +70,24 @@ function addCruiser(game, x, z, heading, unitType = 'Interceptor', state = 'purs
 function paintHero(car, color) {
   car.group.traverse((o) => {
     if (!o.isMesh || !o.material || !o.material.color) return;
-    if (o.material.color.getHex() === 0xff5a4e) o.material.color.setHex(color);
+    const m = o.material;
+    // vehicle.js creates every body panel with this roughness/metalness pair; glass,
+    // tyres, chrome and lights use different values and keep their own colours.
+    if (Math.abs(m.roughness - 0.42) < 1e-6 && Math.abs(m.metalness - 0.32) < 1e-6) {
+      m.color.setHex(color);
+    }
   });
+  if (!car.group.userData.heroStripe) {
+    const stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.34, 0.03, 1.45),
+      new THREE.MeshStandardMaterial({ color: 0xfff1d4, roughness: 0.55, metalness: 0.0 }),
+    );
+    stripe.position.set(0, 1.59, 0.02);
+    stripe.castShadow = true;
+    stripe.receiveShadow = true;
+    car.group.add(stripe);
+    car.group.userData.heroStripe = stripe;
+  }
 }
 
 function buildCrew(scene, x, z, shirt, heading) {
@@ -108,7 +125,7 @@ function stageChase(game, rng) {
   const h = Math.PI / 2;
   const car = drive(game, game.heroCar, -90, 196, h);
   car.speed = 31;
-  paintHero(car, 0xff3d6e);
+  paintHero(car, 0xe0235c);
   game.player.weapon = 'smg';
   game.player.ammo.smg = 150;
   game.player.health = 96;
@@ -131,12 +148,12 @@ function stageChase(game, rng) {
   game.police.roadblock({ x: car.pos.x, z: car.pos.z }, h, 34);
   game.police.spawnHelicopter(car.pos);
   const heli = game.police.helicopters[0];
-  const hx = car.pos.x + Math.sin(h) * 60;
-  const hz = car.pos.z + Math.cos(h) * 60;
-  heli.group.position.set(hx, 31, hz);
+  const hx = car.pos.x + Math.sin(h) * 46;
+  const hz = car.pos.z + Math.cos(h) * 46 + 13;
+  heli.group.position.set(hx, 19, hz);
   heli.group.lookAt(car.pos.x, 0.5, car.pos.z);
   heli.group.rotation.z = 0;
-  const spot = new THREE.Vector3(hx + Math.sin(h) * 24, 0.18, hz + Math.cos(h) * 24);
+  const spot = new THREE.Vector3(car.pos.x, 0.18, car.pos.z);
   heli.spot.position.copy(spot);
   heli.beam.position.copy(heli.group.position).lerp(spot, 0.5);
   const beamDir = spot.clone().sub(heli.group.position).normalize();
@@ -152,11 +169,19 @@ function stageChase(game, rng) {
     p.group.rotation.y = Math.PI + side * 0.2;
     p.group.visible = true;
   }
-  const back = 8.5;
-  const lat = 1.7;
+  const back = 11.5;
+  const lat = 7.0;
+  const lookAhead = 18;
+  const lookSide = 7.0;
   const cx = car.pos.x - Math.sin(h) * back + Math.cos(h) * lat;
   const cz = car.pos.z - Math.cos(h) * back - Math.sin(h) * lat;
-  cameraAt(game, cx, 4.8, cz, car.pos.x + Math.sin(h) * 18.5, 0.66, car.pos.z + Math.cos(h) * 18.5, 40);
+  cameraAt(
+    game, cx, 5.6, cz,
+    car.pos.x + Math.sin(h) * lookAhead,
+    0.8,
+    car.pos.z + Math.cos(h) * lookAhead + Math.sin(h) * lookSide,
+    38,
+  );
 }
 
 function stageStreet(game) {
@@ -219,7 +244,7 @@ function stageStreet(game) {
     c.mesh.position.set(c.x, 0.1, c.z);
     c.mesh.rotation.y = c.heading;
   });
-  cameraAt(game, 12.6, 2.3, -8.8, 9.9, 1.45, -38, 47);
+  cameraAt(game, 9.6, 2.3, -8.8, 0.5, 1.45, -38, 47);
 }
 
 function stageDrive(game) {
@@ -231,7 +256,7 @@ function stageDrive(game) {
   game.economy.clock = 19 * 60 + 4;
   const car = drive(game, game.heroCar, -18, 200.2, -Math.PI / 2);
   car.speed = 31;
-  paintHero(car, 0xff3d6e);
+  paintHero(car, 0xe0235c);
   game.player.health = 93;
   game.player.armour = 38;
   game.player.ammo.smg = 118;

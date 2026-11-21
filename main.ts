@@ -1,3 +1,4 @@
+// TypeScript entry module: prepares the frozen static game and hands it in for the entry.
 // Stunt and phone pass: scoring and handset modules staged for later wiring.
 // Entry pass: the static build and screenshot copy frozen for the r7 entry.
 // VELA CITY boot and capture pass: boot fixes, visible HUD, four SPEC presets.

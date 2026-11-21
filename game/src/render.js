@@ -1,3 +1,4 @@
+// Render module: sets up the renderer, golden-hour sky, fog, shadows and chase camera.
 // Render pass: sky, fog and camera rig frozen for the r7 entry.
 // Exposure pass: golden-hour exposure and fog frozen from the frame fix.
 // Renderer, sky, sun, fog, shadows, tone mapping and the third-person camera rig with wall
@@ -16,7 +17,7 @@ export function createRenderer(canvas) {
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.78;
+  renderer.toneMappingExposure = 0.84;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setClearColor(0x1a3f4c, 1);
@@ -25,9 +26,9 @@ export function createRenderer(canvas) {
 
 export function createSky(scene) {
   const uniforms = {
-    top: { value: new THREE.Color('#24546f') },
-    horizon: { value: new THREE.Color('#f7b97c') },
-    sunColor: { value: new THREE.Color('#ffc47c') },
+    top: { value: new THREE.Color('#123f55') },
+    horizon: { value: new THREE.Color('#ffbe78') },
+    sunColor: { value: new THREE.Color('#ffce8a') },
     sunDir: { value: new THREE.Vector3(-0.72, 0.21, 0.66).normalize() },
     dusk: { value: 0 },
   };
@@ -41,8 +42,9 @@ export function createSky(scene) {
         float h = clamp(vDir.y * 1.15 + 0.06, 0.0, 1.0);
         vec3 col = mix(horizon, top, pow(h, 0.62));
         float d = max(dot(normalize(vDir), sunDir), 0.0);
+        col += sunColor * pow(d, 900.0) * (2.0 - dusk * 0.8);
         col += sunColor * pow(d, 22.0) * (1.25 - dusk * 0.45);
-        col += sunColor * pow(d, 3.0) * 0.16;
+        col += sunColor * pow(d, 3.0) * (0.30 - dusk * 0.08);
         col = mix(col, col * vec3(1.0, 0.72, 0.86) + vec3(0.05, 0.0, 0.08), dusk * 0.55);
         float band = smoothstep(0.0, 0.10, vDir.y);
         gl_FragColor = vec4(col, 1.0);
@@ -51,7 +53,7 @@ export function createSky(scene) {
   const dome = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), mat);
   dome.name = 'sky-dome';
   scene.add(dome);
-  scene.fog = new THREE.FogExp2(0xd6a06d, 0.00135);
+  scene.fog = new THREE.FogExp2(0xd89a64, 0.00135);
   return dome;
 }
 
@@ -183,10 +185,10 @@ export function updateCamera(rig, target, dt, speed) {
 export function setTimeOfDay(scene, sky, lights, mode = 'golden') {
   const dusk = mode === 'dusk';
   sky.material.uniforms.dusk.value = dusk ? 1 : 0;
-  sky.material.uniforms.top.value.set(dusk ? '#161f3d' : '#2b5d7a');
-  sky.material.uniforms.horizon.value.set(dusk ? '#ff6f61' : '#ffcf9a');
+  sky.material.uniforms.top.value.set(dusk ? '#161f3d' : '#123f55');
+  sky.material.uniforms.horizon.value.set(dusk ? '#ff6f61' : '#ffbe78');
   sky.material.uniforms.sunDir.value.set(dusk ? -0.58 : -0.72, dusk ? 0.055 : 0.21, dusk ? 0.8 : 0.66).normalize();
-  scene.fog.color.set(dusk ? '#7a4b63' : '#d6a06d');
+  scene.fog.color.set(dusk ? '#7a4b63' : '#d89a64');
   scene.fog.density = dusk ? 0.0030 : 0.00135;
   lights.sun.color.set(dusk ? 0xff9a62 : 0xffb575);
   lights.sun.intensity = dusk ? 1.15 : 2.2;

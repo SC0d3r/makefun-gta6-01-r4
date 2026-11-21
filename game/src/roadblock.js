@@ -1,3 +1,4 @@
+// Roadblock module: assembles the cruisers, barriers, spike strip and foot officers for a blockade.
 // Roadblock pass: cruisers, barriers, a spike strip and two foot officers.
 // The block forms for 1.2 s, holds, fires inside 30 m, and reports a breach or a clear
 // through one event string. All random timing comes from the seeded rng PoliceDispatch owns.

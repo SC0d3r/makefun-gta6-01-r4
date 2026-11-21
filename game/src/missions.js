@@ -1,3 +1,4 @@
+// Missions module: runs the Courier Run, Hot Pursuit and Marina Heist story state machine.
 // Mission pass: story state machine frozen for the r7 entry.
 // Marker pass: mission staging and marker frozen from the frame fix.
 // The story: Courier Run, Hot Pursuit and Marina Heist as a real mission state machine with

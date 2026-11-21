@@ -1,3 +1,4 @@
+// Helicopter module: flies AIR-1 and AIR-2 on their seeded orbits with searchlights and callouts.
 // Air support pass: the r7 air unit, its orbit, searchlight and event callouts.
 // AIR-1 and AIR-2 share one model builder and one flight model. Every random choice comes
 // from the seeded rng handed in by PoliceDispatch, so a replay stages the same air picture.

@@ -1,3 +1,4 @@
+// RNG module: provides the deterministic seeded random stream used across the frozen city.
 // RNG pass: deterministic seeded randomness frozen for the r7 entry.
 // Deterministic randomness: ?seed=N fixes every city, traffic, pedestrian, rival and mission
 // choice so a screenshot preset is identical on every machine.

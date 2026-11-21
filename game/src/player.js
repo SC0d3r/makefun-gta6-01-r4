@@ -1,3 +1,4 @@
+// Player module: moves Rico on foot with walk, sprint, jump, collision, armour and weapons.
 // Player pass: on-foot movement and combat frozen for the r7 entry.
 // Rico Vela on foot: a box-built courier with a walk cycle, sprint, jump, sea and building
 // collision, armour, weapon slots, muzzle flashes and frozen-in-air tracer rounds.

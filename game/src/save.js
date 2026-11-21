@@ -1,3 +1,4 @@
+// Save module: guards the versioned store that persists the full city state beside the economy save.
 // Save pass: a guarded store for the full city state beside the existing Economy save.
 // The store owns its own key and version, so the title screen keeps reading the original
 // Economy record under SAVE_KEY. Every storage, JSON and game access is guarded: a missing

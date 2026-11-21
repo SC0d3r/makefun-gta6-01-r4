@@ -1,3 +1,4 @@
+// City module: generates the coastal districts, towers, beach and marina that make up VELA CITY.
 // City pass: districts, blocks and props frozen for the r7 entry.
 // VELA CITY generator: a golden-hour coastal grid of coral low-rises, teal glass towers, a palm
 // boulevard, sand beach, marina docks and boats, hillside villas and painted canvas signs.
@@ -6,6 +7,11 @@
 
 import { PALETTE, CITY_LAYOUT } from './config.js';
 import { seededRandom, clamp } from './rng.js';
+import {
+  createFacadeSet, facadeStyleFor, facadeMaterial, facadeGeometry,
+  decorateBuilding, flushFacadeDetails,
+} from './facades.js';
+import { buildFleet } from './fleet.js';
 
 export function generateCity(scene, seed = 7) {
   const rng = seededRandom(seed);
@@ -27,9 +33,10 @@ export function generateCity(scene, seed = 7) {
   addStreetLights(root, rng);
   addPalms(root, rng);
   addProps(root, rng);
+  const fleet = buildFleet(scene, seed);
   return {
     root, colliders: cityColliders, roads: minimapRoads, signs, crates: marinaCrates,
-    docks: marinaDocks, water, boats, landmark: { x: 40, z: -40 },
+    docks: marinaDocks, water, boats, fleet, landmark: { x: 40, z: -40 },
   };
 }
 
@@ -122,6 +129,7 @@ function sidewalkBlock(root, x0, x1, z0, z1) {
 
 export function buildBuildings(root, rng) {
   const L = CITY_LAYOUT;
+  const facades = createFacadeSet();
   const xs = [-320, ...L.avenues, 320];
   const zs = [-280, ...L.streets, 160, 196];
   const win = { dark: [], lit: [], pink: [] };
@@ -134,7 +142,7 @@ export function buildBuildings(root, rng) {
       const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
       if (cz > 160) {
         // The thin boulevard block is a continuous row of two-storey shops.
-        shopRow(root, x0, x1, z0, z1, rng, win, awnings);
+        shopRow(root, x0, x1, z0, z1, rng, win, awnings, facades);
         continue;
       }
       if (cz > 150) continue;
@@ -154,21 +162,23 @@ export function buildBuildings(root, rng) {
           const pz = z0 + (b + 0.5) * ((z1 - z0) / rows);
           const tall = downtown && rng.chance(0.62);
           const h = tall ? rng.range(38, 96) : rng.range(7, 20);
-          addBuilding(root, px, pz, w, d, h, rng, win, awnings, tall);
+          addBuilding(root, px, pz, w, d, h, rng, win, awnings, tall, facades);
         }
       }
     }
   }
   makeWindowInstances(root, win);
   makeAwnings(root, awnings);
+  flushFacadeDetails(root, facades);
 }
 
-function addBuilding(root, x, z, w, d, h, rng, win, awnings, tall) {
+function addBuilding(root, x, z, w, d, h, rng, win, awnings, tall, facades) {
   const palette = tall
     ? [0x2f7f86, 0x337d88, 0x2a6f78, 0x3d8a91, 0x245f6b]
     : [0xf4ead6, 0xe8735a, 0xd9b98a, 0xf0d9bd, 0xe8b59f, 0xcfd8c6, 0xf0e3cf];
   const color = rng.pick(palette);
-  const body = new THREE.Mesh(unitBox, matFor(color));
+  const style = facadeStyleFor(color, h, x, z);
+  const body = new THREE.Mesh(facadeGeometry(facades, w, h, d), facadeMaterial(facades, style));
   body.scale.set(w, h, d);
   body.position.set(x, h / 2 + 0.28, z);
   body.castShadow = true;
@@ -215,9 +225,11 @@ function addBuilding(root, x, z, w, d, h, rng, win, awnings, tall) {
       if (f.nx === -1) awnings.push({ x: x - w / 2 - 0.55, z, rot: Math.PI / 2, w: d * 0.75, color: rng.pick([0xe8735a, 0x2f7f86, 0xffc35c]) });
     }
   }
+  const detailRng = seededRandom(1 + Math.floor((x + 700) * 131 + (z + 400) * 57 + h * 911));
+  decorateBuilding(facades, { x, z, w, d, h, style, tall, roofTop: h + 1.45, rng: detailRng });
 }
 
-function shopRow(root, x0, x1, z0, z1, rng, win, awnings) {
+function shopRow(root, x0, x1, z0, z1, rng, win, awnings, facades) {
   const width = x1 - x0;
   const n = Math.max(2, Math.round(width / 26));
   const w = width / n;
@@ -227,7 +239,8 @@ function shopRow(root, x0, x1, z0, z1, rng, win, awnings) {
     const z = (z0 + z1) / 2;
     const h = rng.range(7, 13);
     const color = rng.pick([0xf4ead6, 0xe8735a, 0xf0d9bd, 0xd9b98a, 0xe8b59f]);
-    const body = new THREE.Mesh(unitBox, matFor(color));
+    const style = facadeStyleFor(color, h, x, z);
+    const body = new THREE.Mesh(facadeGeometry(facades, w - 1.6, h, d), facadeMaterial(facades, style));
     body.scale.set(w - 1.6, h, d);
     body.position.set(x, h / 2 + 0.28, z);
     body.castShadow = true;
@@ -241,13 +254,61 @@ function shopRow(root, x0, x1, z0, z1, rng, win, awnings) {
     for (let c = 0; c < Math.floor(w / 4); c++) {
       win.dark.push({ x: x - w / 2 + 2 + c * 4, y: h - 2.1, z: z + d / 2 + 0.05, rot: 0, w: 1.6, h: 1.35 });
     }
-    awnings.push({ x, z: z + d / 2 + 0.6, rot: 0, w: w - 2.4, color: rng.pick([0xe8735a, 0x2f7f86, 0xffc35c, 0xff3d8b]) });
+    const awnColor = rng.pick([0xe8735a, 0x2f7f86, 0xffc35c, 0xff3d8b]);
+    awnings.push({ x, z: z + d / 2 + 0.6, rot: 0, w: w - 2.4, color: awnColor });
+    for (let c = 0; c < Math.floor(w / 4); c++) {
+      win.dark.push({ x: x - w / 2 + 2 + c * 4, y: h - 2.1, z: z - d / 2 - 0.05, rot: Math.PI, w: 1.6, h: 1.35 });
+    }
+    for (let zz = z - d / 2 + 3; zz <= z + d / 2 - 3; zz += 4) {
+      win.dark.push({ x: x - (w - 1.6) / 2 - 0.05, y: h - 2.1, z: zz, rot: Math.PI / 2, w: 1.6, h: 1.35 });
+      win.dark.push({ x: x + (w - 1.6) / 2 + 0.05, y: h - 2.1, z: zz, rot: -Math.PI / 2, w: 1.6, h: 1.35 });
+    }
+    awnings.push({ x: x - (w - 1.6) / 2 - 0.55, z, rot: Math.PI / 2, w: d * 0.7, color: awnColor });
+    awnings.push({ x: x + (w - 1.6) / 2 + 0.55, z, rot: Math.PI / 2, w: d * 0.7, color: awnColor });
+    const bandMat = matFor(0x17313a);
+    const fasciaMat = matFor(0xf4ead6);
+    const frontBand = new THREE.Mesh(unitBox, bandMat);
+    frontBand.scale.set(w - 2.4, 1.5, 0.14);
+    frontBand.position.set(x, 2.1, z + d / 2 + 0.08);
+    root.add(frontBand);
+    const backBand = new THREE.Mesh(unitBox, bandMat);
+    backBand.scale.set(w - 2.4, 1.5, 0.14);
+    backBand.position.set(x, 2.1, z - d / 2 - 0.08);
+    root.add(backBand);
+    const leftBand = new THREE.Mesh(unitBox, bandMat);
+    leftBand.scale.set(0.14, 1.5, d - 2.4);
+    leftBand.position.set(x - (w - 1.6) / 2 - 0.08, 2.1, z);
+    root.add(leftBand);
+    const rightBand = new THREE.Mesh(unitBox, bandMat);
+    rightBand.scale.set(0.14, 1.5, d - 2.4);
+    rightBand.position.set(x + (w - 1.6) / 2 + 0.08, 2.1, z);
+    root.add(rightBand);
+    const frontFascia = new THREE.Mesh(unitBox, fasciaMat);
+    frontFascia.scale.set(w - 2.4, 0.45, 0.18);
+    frontFascia.position.set(x, 3.1, z + d / 2 + 0.1);
+    root.add(frontFascia);
+    const backFascia = new THREE.Mesh(unitBox, fasciaMat);
+    backFascia.scale.set(w - 2.4, 0.45, 0.18);
+    backFascia.position.set(x, 3.1, z - d / 2 - 0.1);
+    root.add(backFascia);
+    const leftFascia = new THREE.Mesh(unitBox, fasciaMat);
+    leftFascia.scale.set(0.18, 0.45, d - 2.4);
+    leftFascia.position.set(x - (w - 1.6) / 2 - 0.1, 3.1, z);
+    root.add(leftFascia);
+    const rightFascia = new THREE.Mesh(unitBox, fasciaMat);
+    rightFascia.scale.set(0.18, 0.45, d - 2.4);
+    rightFascia.position.set(x + (w - 1.6) / 2 + 0.1, 3.1, z);
+    root.add(rightFascia);
     if (h > 9) {
       const sign = new THREE.Mesh(unitBox, matFor(0x2f7f86));
       sign.scale.set(w * 0.5, 2.2, 0.2);
       sign.position.set(x, h - 2.2, z + d / 2 + 0.15);
       root.add(sign);
     }
+    const detailRng = seededRandom(1 + Math.floor((x + 700) * 149 + (z + 400) * 61 + h * 877));
+    decorateBuilding(facades, {
+      x, z, w: w - 1.6, d, h, style, tall: false, shopRow: true, roofTop: h + 1.0, rng: detailRng,
+    });
   }
 }
 
@@ -424,6 +485,17 @@ export function buildMarina(root, rng) {
   const L = CITY_LAYOUT;
   const shopXs = [-164, -132, -100, -68];
   const names = ['VELA PAWN', 'HOTEL AZURA', 'MARINA CHANDLERY', 'CORAL 88 FM'];
+  const boulevardSigns = [
+    { bg: '#101820', fg: '#ffc35c', sub: 'WE BUY GOLD' },
+    { bg: '#14555f', fg: '#f4ead6', sub: 'MARINA VIEW · ROOMS' },
+    { bg: '#fff4de', fg: '#2f7f86', sub: 'ROPE · FUEL · ICE' },
+    { bg: '#101820', fg: '#ff3d8b', sub: 'THE COAST SOUNDS LIKE THIS' },
+  ];
+  const awningColors = [0xe8735a, 0x2f7f86, 0xff3d8b, 0xffc35c];
+  const windowLit = new THREE.MeshBasicMaterial({ color: 0xffd9a0, toneMapped: false });
+  const windowDark = matFor(0x17313a);
+  const neonCyan = new THREE.MeshBasicMaterial({ color: 0x39e6e0, toneMapped: false });
+  const neonPink = new THREE.MeshBasicMaterial({ color: 0xff3d8b, toneMapped: false });
   shopXs.forEach((x, i) => {
     const w = 27, d = 13, h = i === 1 ? 15 : 9 + i;
     const b = new THREE.Mesh(unitBox, matFor(i === 1 ? 0xf4ead6 : i === 2 ? 0xe8735a : 0xf0d9bd));
@@ -441,6 +513,59 @@ export function buildMarina(root, rng) {
     awning.scale.set(w - 3, 0.4, 2.4);
     awning.position.set(x, 3.4, 233.2);
     root.add(awning);
+    // Boulevard (-z) shopfront: glass, trim, door, awning and lit signage.
+    const glass = new THREE.Mesh(unitBox, matFor(0x17313a));
+    glass.scale.set(w - 6, 3.0, 0.16);
+    glass.position.set(x, 2.0, 219.42);
+    root.add(glass);
+    for (const mx of [-7.5, -2.5, 2.5, 7.5]) {
+      const mullion = new THREE.Mesh(unitBox, matFor(0xf4ead6));
+      mullion.scale.set(0.14, 3.0, 0.2);
+      mullion.position.set(x + mx, 2.0, 219.34);
+      root.add(mullion);
+    }
+    const door = new THREE.Mesh(unitBox, matFor(0x5b4330));
+    door.scale.set(1.9, 2.5, 0.22);
+    door.position.set(x + 8, 1.55, 219.34);
+    root.add(door);
+    const handle = new THREE.Mesh(unitBox, matFor(0xd9a441));
+    handle.scale.set(0.12, 0.5, 0.1);
+    handle.position.set(x + 8.8, 1.55, 219.2);
+    root.add(handle);
+    const fascia = new THREE.Mesh(unitBox, matFor(0xf4ead6));
+    fascia.scale.set(w - 2, 0.6, 0.24);
+    fascia.position.set(x, 4.1, 219.38);
+    root.add(fascia);
+    const shopAwning = new THREE.Mesh(unitBox, matFor(awningColors[i]));
+    shopAwning.scale.set(w - 4, 0.35, 2.6);
+    shopAwning.position.set(x, 3.55, 218.4);
+    root.add(shopAwning);
+    for (const px of [-1, 1]) {
+      const pole = new THREE.Mesh(unitBox, matFor(0x3d474e));
+      pole.scale.set(0.08, 3.4, 0.08);
+      pole.position.set(x + (px * (w - 5)) / 2, 1.7, 217.2);
+      root.add(pole);
+    }
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(i === 1 ? 12 : 11, i === 1 ? 3.2 : 2.6),
+      signMaterial({ text: names[i], ...boulevardSigns[i] })
+    );
+    sign.position.set(x, h - 2.0, 219.3);
+    sign.rotation.y = Math.PI;
+    root.add(sign);
+    let row = 0;
+    for (let y = 6.4; y <= h - 3.0; y += 3.2, row++) {
+      for (const wx of [x - 6.5, x + 6.5]) {
+        const win = new THREE.Mesh(unitBox, row % 2 ? windowDark : windowLit);
+        win.scale.set(2.6, 1.5, 0.14);
+        win.position.set(wx, y, 219.42);
+        root.add(win);
+      }
+    }
+    const neon = new THREE.Mesh(unitBox, i % 2 ? neonPink : neonCyan);
+    neon.scale.set(w - 6, 0.12, 0.1);
+    neon.position.set(x, 4.48, 219.3);
+    root.add(neon);
   });
   // Wooden docks stepping into the sea.
   const plankMat = matFor(0x8a6a4a);

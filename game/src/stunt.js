@@ -1,3 +1,4 @@
+// Stunt module: scores named moves and combos and returns HUD-ready rows for the loop.
 // Stunt pass: named moves, combo scoring and rank progress for VELA CITY.
 // This module only computes score, callouts and HUD-ready rows. The main loop and HUD are wired
 // by a later pass, so nothing here touches the DOM, the scene or any existing module export.

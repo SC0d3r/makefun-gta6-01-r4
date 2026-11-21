@@ -1,3 +1,4 @@
+// Dossier module: records discoveries, heat, stunts and day changes for the paused city page.
 /**
  * District dossier and incident log for the paused city page.
  * It watches discoveries, heat bands, stunts, missions, radio moves,

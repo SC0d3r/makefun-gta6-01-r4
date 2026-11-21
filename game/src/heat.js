@@ -1,3 +1,4 @@
+// Heat module: tracks per-district pressure, reputation tiers and the labels the HUD reads.
 // Heat pass: district heat, reputation tiers, street rumors and heat helpers.
 // Heat is a per-district pressure value from 0 to 100. Reputation is a per-district
 // standing value from 0 to 1000. Police stars push heat up while the player stays in

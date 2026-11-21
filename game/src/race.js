@@ -1,3 +1,4 @@
+// Race module: runs the two-lap Coral Loop race with fixed checkpoints and rival pace.
 // Race pass: checkpoint race state frozen for the r7 entry.
 // A real dusk street race: Coral Loop, two laps, three named rivals — Dario Sarno, Nia Vale and
 // Teo Marchetti — fixed checkpoints, live position, rubber-band rival pace, a race HUD line and a

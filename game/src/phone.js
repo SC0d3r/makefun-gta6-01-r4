@@ -1,3 +1,4 @@
+// Phone module: keeps contacts, message threads, side jobs and handset settings as pure data.
 // Phone pass: contacts, message threads, side jobs and settings for VELA CITY.
 // The module only holds data and pure presentation helpers. A later wiring pass calls toggle()
 // and lines() from the HUD, so nothing here touches the DOM, the scene or another module export.

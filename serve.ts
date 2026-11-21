@@ -1,3 +1,4 @@
+// TypeScript dev server module: serves the game/ folder locally with the MIME types browsers need.
 // r13 city-systems pass: the static server is unchanged.
 // Serve pass: the local static server frozen for the r7 entry.
 // A tiny static server for game/ (Node 22, standard library only), so an entry can be played

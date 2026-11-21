@@ -1,3 +1,4 @@
+// Map module: supplies district zones, street labels and shared drawing helpers for both maps.
 // Map pass: district zones, street names, waypoints and canvas drawing helpers.
 // Everything here is presentation data plus pure draw functions, so the HUD, the pause map
 // and the minimap can share one projection without changing the city generator.

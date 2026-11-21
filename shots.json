@@ -2,18 +2,21 @@
   {
     "name": "1-chase.jpg",
     "query": "?shot=chase&seed=7",
-    "note": "r13 city-systems pass"
+    "note": "Golden-hour pursuit on Palm Boulevard: red hero car under the police helicopter spotlight with cruisers, a roadblock and a startled sidewalk crowd."
   },
   {
     "name": "2-street.jpg",
-    "query": "?shot=street&seed=7"
+    "query": "?shot=street&seed=7",
+    "note": "Downtown sidewalk at golden hour: the player faces a shop-lined street with walkers on both pavements and parked cars at the kerb."
   },
   {
     "name": "3-drive.jpg",
-    "query": "?shot=drive&seed=7"
+    "query": "?shot=drive&seed=7",
+    "note": "Marina run at golden hour: the red hero car speeds along the waterfront past docks and moored boats."
   },
   {
     "name": "4-mission.jpg",
-    "query": "?shot=mission&seed=7"
+    "query": "?shot=mission&seed=7",
+    "note": "Marina dock drop at dusk: the player approaches the mission marker while two police cruisers and a third blocking unit close in."
   }
 ]

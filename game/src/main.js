@@ -1,12 +1,15 @@
+// Main module: boots the game, runs the single loop and wires every system and shot preset together.
 // Main pass: boot, loop and system wiring frozen for the r7 entry.
 // VELA CITY boot and simulation. One canvas, one loop, a state machine (title, playing, paused,
 // dead) and the wiring of city, player, vehicles, traffic, pedestrians, police, missions, race,
 // economy, HUD, audio, renderer and input. Every screenshot preset enters through runShot().
 
 import { generateCity, updateCity, isOnDock } from './city.js';
+import { updateFleet } from './fleet.js';
 import { PlayerController, updatePlayer } from './player.js';
 import { createVehicle, enterVehicle, exitVehicle, Vehicle } from './vehicle.js';
 import { createTraffic, createPedestrians, updateTraffic, updatePedestrians } from './traffic.js';
+import { createCrowd, updateCrowd, startleCrowd } from './crowd.js';
 import { WantedSystem, PoliceDispatch, setWantedLevel, updateWanted } from './police.js';
 import { MissionRunner, beginMission, updateMission } from './missions.js';
 import { RaceSystem, startRace, updateRace } from './race.js';
@@ -20,6 +23,8 @@ import { RadioDial } from './radio.js';
 import { HUD } from './hud.js';
 import { AudioEngine } from './audio.js';
 import { createRenderer, createSky, setupShadows, CameraRig, updateCamera, setTimeOfDay } from './render.js';
+import { createAtmosphere, updateAtmosphere } from './atmosphere.js';
+import { createLandmarks, updateLandmarks } from './landmarks.js';
 import { Input } from './input.js';
 import { DistrictDossier } from './dossier.js';
 import { PALETTE, CITY_LAYOUT, CAMERA, PLAYER, POLICE, DISTRICTS, RADIO_STATIONS } from './config.js';
@@ -61,6 +66,8 @@ export class Game {
     this.sky = createSky(this.scene);
     this.lights = setupShadows(this.scene);
     this.city = generateCity(this.scene, this.seed);
+    this.atmosphere = createAtmosphere(this.scene, this.seed);
+    this.landmarks = createLandmarks(this.scene, this.seed);
     this.rig = new CameraRig(this.camera, this.scene);
     this.rig.setBlockers(this.city.colliders);
     this.rig.setMode('onfoot');
@@ -71,6 +78,7 @@ export class Game {
     this.player.group.position.copy(this.player.pos);
     this.traffic = createTraffic(this.scene, this.seed);
     this.peds = createPedestrians(this.scene, this.seed);
+    this.crowd = createCrowd(this.scene, this.seed);
     this.economy = new Economy();
     this.world = { colliders: this.city.colliders, bounds: CITY_LAYOUT.bounds, onCrash: (v) => this.onVehicleCrash(v) };
     this.police = new PoliceDispatch(this.scene, this.world, this.seed);
@@ -314,8 +322,11 @@ export class Game {
     if (this.state === 'title') {
       this.titleCamera(dt);
       updateCity(this.city, this.time, dt);
+      updateFleet(this.city.fleet, this.time);
+      updateLandmarks(this.landmarks, dt, this.time);
       updateTraffic(this.traffic, dt, null);
       updatePedestrians(this.peds, dt, this.time);
+      updateCrowd(this.crowd, dt, this.time);
       this.hud.tick(dt);
       this.hud.drawHud(this);
       this.input.endFrame();
@@ -377,8 +388,11 @@ export class Game {
     if (this.phone.open) this.handlePhoneKeys();
 
     updateCity(this.city, this.time, dt);
+    updateFleet(this.city.fleet, this.time);
+    updateLandmarks(this.landmarks, dt, this.time);
     updateTraffic(this.traffic, dt, car);
     updatePedestrians(this.peds, dt, this.time);
+    updateCrowd(this.crowd, dt, this.time);
     updateWanted(this.police, dt, this.player, this.police.wanted);
     updateMission(this.missions, dt, this.player, car, this.police);
     if (this.race.active) updateRace(this.race, dt, this.player, car);
@@ -409,8 +423,10 @@ export class Game {
 
   updateWorldIdle(dt) {
     updateCity(this.city, this.time, dt);
+    updateFleet(this.city.fleet, this.time);
     updateTraffic(this.traffic, dt, null);
     updatePedestrians(this.peds, dt, this.time);
+    updateCrowd(this.crowd, dt, this.time);
     updateWanted(this.police, dt, this.player, this.police.wanted);
   }
 
@@ -485,6 +501,7 @@ export class Game {
     if (!shot) return;
     this.audio.playGunshot(0.6);
     this.peds.scare(this.player.pos.x, this.player.pos.z, 34, 6);
+    startleCrowd(this.crowd, this.player.pos.x, this.player.pos.z, 26);
     this.police.damageAt(shot.to, 2.5, 50);
     this.lastShotCrime += 1;
     if (this.police.wanted.stars < 5 && this.time - this.lastShotCrime > 1.4) {
@@ -655,9 +672,11 @@ export class Game {
   }
 
   followSun() {
-    const p = this.player.inVehicle ? this.player.inVehicle.pos : this.player.pos;
-    this.lights.sun.target.position.set(p.x, 0, p.z);
-    this.lights.sun.position.set(p.x + this.sunOffset.x, this.sunOffset.y, p.z + this.sunOffset.z);
+    const p = this.player?.inVehicle ? this.player.inVehicle.pos : this.player?.pos;
+    const focus = p || this.camera?.position;
+    if (!focus) return;
+    this.lights.sun.target.position.set(focus.x, 0, focus.z);
+    this.lights.sun.position.set(focus.x + this.sunOffset.x, this.sunOffset.y, focus.z + this.sunOffset.z);
     this.lights.sun.target.updateMatrixWorld();
   }
 
@@ -678,6 +697,7 @@ export class Game {
   }
 
   onVehicleCrash(v) {
+    startleCrowd(this.crowd, v.pos.x, v.pos.z, 18);
     if (this.police.wanted.stars > 0) return;
     if (this.police.units.some((u) => dist2(u.vehicle.pos.x, u.vehicle.pos.z, v.pos.x, v.pos.z) < 8)) {
       this.applyWanted(Math.min(5, this.police.wanted.stars + 2), this.player);
@@ -685,6 +705,10 @@ export class Game {
   }
 
   renderOnce() {
+    // Shot presets freeze before the loop, so align the shadow frustum with the staged
+    // player (or camera) here as well as in updatePlaying/titleCamera.
+    this.followSun();
+    if (this.atmosphere) updateAtmosphere(this.atmosphere, this.time);
     this.renderer.render(this.scene, this.camera);
   }
 }
