@@ -2,21 +2,21 @@
   {
     "name": "1-chase.jpg",
     "query": "?shot=chase&seed=7",
-    "note": "Golden-hour Palm Boulevard pursuit: the red hero car under a police helicopter spotlight, three cruisers and a roadblock behind it, a burning wreck and a sidewalk crowd."
+    "note": "Palm Beach at golden hour: the hero car seen from behind, three police cruisers closing in, the Palm Beach HUD and the skyline behind."
   },
   {
     "name": "2-street.jpg",
     "query": "?shot=street&seed=7",
-    "note": "Downtown sidewalk at golden hour: the player faces a shop-lined street with seven walkers on both pavements and two parked cars at the kerb."
+    "note": "Downtown at golden hour: the player on a shop-lined sidewalk, a pedestrian ahead, walkers on the far pavement and traffic in the street."
   },
   {
     "name": "3-drive.jpg",
     "query": "?shot=drive&seed=7",
-    "note": "Marina waterfront run at golden hour: the red hero car speeds along the dock road past moored boats."
+    "note": "Marina waterfront at golden hour: the hero car on the dock road past a beach with umbrellas, waterfront buildings and boats."
   },
   {
     "name": "4-mission.jpg",
     "query": "?shot=mission&seed=7",
-    "note": "Marina dock drop at golden hour: the player approaches the mission marker while two pursuit cruisers and a roadblock unit close in."
+    "note": "Marina dock at golden hour: the player on foot approaching the mission marker, a police cruiser on the dock and the Ferris wheel across the water."
   }
 ]

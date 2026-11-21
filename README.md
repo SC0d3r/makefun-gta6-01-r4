@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/gta6-01/SC0d3r/makefun-gta6-01-r4/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard)
 [![reward](https://make.fun/badge/gta6-01/SC0d3r/makefun-gta6-01-r4/reward.svg)](https://make.fun/bounty/gta6-01)
 
-VELA CITY is an original three.js open-world crime game set in a procedural coastal city at golden hour: a downtown street crowd and a parked fleet line the boulevards, the police respond with cruisers, a helicopter and roadblocks as the wanted level rises, burning wreck effects mark the aftermath of the chase, and story jobs carry you from Palm Row to the marina docks. The landmark skyline adds a Ferris wheel, lighthouse, cargo ship, offshore island, hillside sign and drive-in, behind arcade driving, on-foot combat, a minimap and a full HUD.
+VELA CITY is an original three.js open-world crime game set in a procedural coastal city at golden hour. Downtown streets hold a crowd of pedestrians and a parked fleet, and the police answer a rising wanted level with cruisers, a helicopter and roadblocks; burning wreck particle effects mark the aftermath of a chase, while story jobs carry you from Palm Row to the marina docks. The landmark skyline brings a Ferris wheel, lighthouse, cargo ship, offshore island, hillside sign and drive-in, all built around arcade driving, on-foot combat, a minimap and a full HUD.
 
 Every game module in this frozen entry carries a single authored note describing its role.
 
@@ -14,7 +14,7 @@ Every game module in this frozen entry carries a single authored note describing
 node serve.ts
 ```
 
-Then open the printed local URL, or one of the four captured frames with `?shot=chase` (Palm Boulevard pursuit), `?shot=street` (downtown sidewalk), `?shot=drive` (marina waterfront run) or `?shot=mission` (marina dock drop).
+Then open the printed local URL, or jump straight to one of the four captured frames: `?shot=chase` (Palm Boulevard pursuit), `?shot=street` (downtown sidewalk), `?shot=drive` (marina waterfront run) or `?shot=mission` (marina dock drop).
 
 ---
 
