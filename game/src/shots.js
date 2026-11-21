@@ -11,6 +11,7 @@ import { createVehicle } from './vehicle.js';
 import { beginMission } from './missions.js';
 import { setTimeOfDay } from './render.js';
 import { seededRandom } from './rng.js';
+import { spawnWreck, updateFx } from './fx.js';
 
 const STAGES = { chase: stageChase, street: stageStreet, drive: stageDrive, mission: stageMission };
 
@@ -146,29 +147,6 @@ function stageChase(game, rng) {
   addCruiser(game, -87.0, 191.4, h, 'Cruiser');
   addCruiser(game, -87.0, 200.6, h, 'Cruiser');
   game.police.roadblock({ x: car.pos.x, z: car.pos.z }, h, 34);
-  game.police.spawnHelicopter(car.pos);
-  const heli = game.police.helicopters[0];
-  const hx = car.pos.x + Math.sin(h) * 46;
-  const hz = car.pos.z + Math.cos(h) * 46 + 13;
-  heli.group.position.set(hx, 19, hz);
-  heli.group.lookAt(car.pos.x, 0.5, car.pos.z);
-  heli.group.rotation.z = 0;
-  const spot = new THREE.Vector3(car.pos.x, 0.18, car.pos.z);
-  heli.spot.position.copy(spot);
-  heli.beam.position.copy(heli.group.position).lerp(spot, 0.5);
-  const beamDir = spot.clone().sub(heli.group.position).normalize();
-  heli.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDir.clone().negate());
-  for (let i = 0; i < 20; i++) {
-    const p = game.peds.peds[i];
-    const side = i % 2 ? 1 : -1;
-    p.x = car.pos.x + 8 + (i >> 1) * 4.7 + rng.range(-0.8, 0.8);
-    p.z = car.pos.z + side * (16.8 + rng.range(0, 1.8));
-    p.state = i % 3 === 0 ? 'cower' : 'walk';
-    p.fear = 0;
-    p.group.position.set(p.x, 0.3, p.z);
-    p.group.rotation.y = Math.PI + side * 0.2;
-    p.group.visible = true;
-  }
   const back = 11.5;
   const lat = 7.0;
   const lookAhead = 18;
@@ -182,6 +160,38 @@ function stageChase(game, rng) {
     car.pos.z + Math.cos(h) * lookAhead + Math.sin(h) * lookSide,
     38,
   );
+  game.police.spawnHelicopter(car.pos);
+  const heli = game.police.helicopters[0];
+  const cam = game.camera;
+  cam.updateMatrixWorld();
+  const dir = new THREE.Vector3();
+  cam.getWorldDirection(dir);
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+  const pos = cam.position.clone()
+    .addScaledVector(dir, 40)
+    .addScaledVector(right, -17);
+  pos.y = Math.max(19, cam.position.y + 11);
+  heli.group.position.copy(pos);
+  heli.group.lookAt(car.pos.x, 0.5, car.pos.z);
+  heli.group.rotation.z = 0;
+  const spot = new THREE.Vector3(car.pos.x, 0.18, car.pos.z);
+  heli.spot.position.copy(spot);
+  heli.beam.position.copy(heli.group.position).lerp(spot, 0.5);
+  const beamDir = spot.clone().sub(heli.group.position).normalize();
+  heli.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDir.clone().negate());
+  spawnWreck(game.fx, car.pos.x + 10.5, car.pos.z + 23, 0.35);
+  for (let i = 0; i < 70; i += 1) updateFx(game.fx, 1 / 30);
+  for (let i = 0; i < 20; i++) {
+    const p = game.peds.peds[i];
+    const side = i % 2 ? 1 : -1;
+    p.x = car.pos.x + 8 + (i >> 1) * 4.7 + rng.range(-0.8, 0.8);
+    p.z = car.pos.z + side * (16.8 + rng.range(0, 1.8));
+    p.state = i % 3 === 0 ? 'cower' : 'walk';
+    p.fear = 0;
+    p.group.position.set(p.x, 0.3, p.z);
+    p.group.rotation.y = Math.PI + side * 0.2;
+    p.group.visible = true;
+  }
 }
 
 function stageStreet(game) {

@@ -25,6 +25,7 @@ import { AudioEngine } from './audio.js';
 import { createRenderer, createSky, setupShadows, CameraRig, updateCamera, setTimeOfDay } from './render.js';
 import { createAtmosphere, updateAtmosphere } from './atmosphere.js';
 import { createLandmarks, updateLandmarks } from './landmarks.js';
+import { createFx, updateFx } from './fx.js';
 import { Input } from './input.js';
 import { DistrictDossier } from './dossier.js';
 import { PALETTE, CITY_LAYOUT, CAMERA, PLAYER, POLICE, DISTRICTS, RADIO_STATIONS } from './config.js';
@@ -68,6 +69,7 @@ export class Game {
     this.city = generateCity(this.scene, this.seed);
     this.atmosphere = createAtmosphere(this.scene, this.seed);
     this.landmarks = createLandmarks(this.scene, this.seed);
+    this.fx = createFx(this.scene, this.seed);
     this.rig = new CameraRig(this.camera, this.scene);
     this.rig.setBlockers(this.city.colliders);
     this.rig.setMode('onfoot');
@@ -324,6 +326,7 @@ export class Game {
       updateCity(this.city, this.time, dt);
       updateFleet(this.city.fleet, this.time);
       updateLandmarks(this.landmarks, dt, this.time);
+      updateFx(this.fx, dt);
       updateTraffic(this.traffic, dt, null);
       updatePedestrians(this.peds, dt, this.time);
       updateCrowd(this.crowd, dt, this.time);
@@ -390,6 +393,7 @@ export class Game {
     updateCity(this.city, this.time, dt);
     updateFleet(this.city.fleet, this.time);
     updateLandmarks(this.landmarks, dt, this.time);
+    updateFx(this.fx, dt);
     updateTraffic(this.traffic, dt, car);
     updatePedestrians(this.peds, dt, this.time);
     updateCrowd(this.crowd, dt, this.time);
